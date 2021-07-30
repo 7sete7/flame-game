@@ -1,23 +1,24 @@
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
 import 'package:flame/src/gestures/events.dart';
-import 'package:game1/common/BaseWidget.dart';
 import 'dart:ui';
 
 import 'package:game1/common/Component.dart' as My;
-import 'package:game1/common/ProportionComponent.dart';
 import 'package:game1/common/ScreenSize.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 class HudActionBar extends My.Component {
-  final Vector2 _position = Vector2(0, 0);
-  final Vector2 _size = Vector2(100, 100);
+  late final Vector2 size;
+  late final Vector2 position;
 
   List<ActionBarItem> _items = [];
   late final SpriteBatch _spritesheet;
   SpriteBatchComponent? _batchComponent;
 
   HudActionBar() : super(Vector2.zero(), Vector2.zero()) {
+    this.size = Vector2(screenSize.width, 50);
+    this.position = Vector2(0, screenSize.height - this.size.y);
+
     this.init();
   }
 
@@ -30,10 +31,21 @@ class HudActionBar extends My.Component {
   }
 
   void _loadItems() {
-    ActionBarItem firstItem = ActionBarItem("title", 10);
-    firstItem.setRect(30, 10, Vector2(0.3, 0.3)).setPosition(Vector2(0.3, 0.3)).addTo(this._spritesheet);
+    const int ITEMS_SPACING = 5;
 
-    this._items.add(firstItem);
+    List<ActionBarItem> items = [];
+
+    items.add(ActionBarItem("title", 10).setRect(5, 5, 27, 30));
+    items.add(ActionBarItem("title", 10).setRect(5, 5, 27, 30));
+
+    for (int i = 0; i < items.length; i++) {
+      ActionBarItem item = items[i];
+      double itemX = (item.rect.width * item.scale + ITEMS_SPACING) * i;
+
+      item.setPosition(Vector2(this.position.x + itemX, this.position.y)).addTo(this._spritesheet);
+    }
+
+    this._items.addAll(items);
   }
 
   @override
@@ -56,7 +68,7 @@ class HudActionBar extends My.Component {
   }
 }
 
-class ActionBarItem extends ProportionComponent {
+class ActionBarItem extends My.Component {
   late final String _id;
   String get id => this._id;
 
@@ -64,29 +76,31 @@ class ActionBarItem extends ProportionComponent {
   String title;
   String? tooltip;
 
-  late Rect _rect;
+  late Rect rect;
+  final double scale = 1.5;
 
-  ActionBarItem(this.title, this.price, {this.tooltip}) : super(Vector2.zero(), Vector2.zero());
+  ActionBarItem(this.title, this.price, {this.tooltip}) : super(Vector2.zero(), Vector2(0.3, 0.3));
 
-  ActionBarItem setRect(double xy, double yx, Vector2 sizeRate) {
-    this.sizeRate = sizeRate;
-
-    this._rect = Rect.fromLTWH(xy, yx, this.width, this.height);
+  ActionBarItem setRect(double rectX, double rectY, double rectWidth, double rectHeight) {
+    this.rect = Rect.fromLTWH(rectX, rectY, rectWidth, rectHeight);
     return this;
   }
 
-  ActionBarItem setPosition(Vector2 positionRate) {
-    this.positionRate = positionRate;
+  ActionBarItem setPosition(Vector2 position) {
+    this.position = position;
     return this;
   }
 
   void addTo(SpriteBatch batch) {
+    this.resize(screenSize.getSize());
+
     // ignore: unnecessary_null_comparison
-    if (this._rect == null) throw StateError("You must set rect first: $title");
+    if (this.rect == null) throw StateError("You must set rect first: $title");
     // ignore: unnecessary_null_comparison
     if (this.x == null) throw StateError("You must set position first: $title");
+    print({"x": this.x, "y": this.y, "w": this.width});
 
-    batch.add(source: this._rect, offset: Vector2(this.x, this.y));
+    batch.add(source: this.rect, offset: Vector2(this.x, this.y), scale: this.scale);
   }
 
   @override
@@ -96,9 +110,7 @@ class ActionBarItem extends ProportionComponent {
   void render(Canvas canvas) {}
 
   @override
-  void resize(Vector2 size) {
-    super.resize(size);
-  }
+  void resize(Vector2 size) {}
 
   @override
   void update(double dt) {}
